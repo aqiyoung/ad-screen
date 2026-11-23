@@ -1,10 +1,8 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../config/app_config.dart';
 import '../models/device_config.dart';
+import '../services/media_importer.dart';
 
 /// 设置页。保存后把新的 AppConfig 返回给播放器。
 class SettingsScreen extends StatefulWidget {
@@ -56,28 +54,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _importFiles() async {
-    final pickedFiles = await FilePicker.pickFiles(type: FileType.media);
-    if (pickedFiles.isEmpty) return;
-
-    final directory = Directory(_mediaPath.text.trim());
-    if (!directory.existsSync()) {
-      await directory.create(recursive: true);
-    }
-
-    var count = 0;
-    for (final picked in pickedFiles) {
-      final source = picked.path;
-      if (source == null) continue;
-      final name = source.split(RegExp(r'[/\\]')).last;
-      await File(source)
-          .copy('${directory.path}${Platform.pathSeparator}$name');
-      count++;
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已导入 $count 个文件到 ${directory.path}')),
-    );
+    final path = _mediaPath.text.trim();
+    final count = await const MediaImporter().importInto(path);
+    if (!mounted || count == 0) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('已导入 $count 个文件到 $path')));
   }
 
   Future<void> _save() async {

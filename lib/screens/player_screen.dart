@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../config/app_config.dart';
 import '../models/media_item.dart';
+import '../services/media_importer.dart';
 import '../sources/content_source.dart';
 
 /// 全屏循环播放页面。
@@ -105,6 +106,38 @@ class _PlayerScreenState extends State<PlayerScreen> {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
+  Future<void> _importMedia() async {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    final count = await const MediaImporter().importInto(
+      widget.config.mediaPath,
+    );
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(count > 0 ? '已导入 $count 个文件，即将开始播放' : '未选择文件')),
+    );
+    if (count > 0) await _refresh();
+  }
+
+  Widget _circleButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: Colors.white.withValues(alpha: 0.45),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,21 +151,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
             Positioned(
               right: 14,
               bottom: 14,
-              child: GestureDetector(
-                onTap: _openSettings,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _circleButton(
+                    Icons.add_photo_alternate_outlined,
+                    _importMedia,
                   ),
-                  child: Icon(
-                    Icons.settings,
-                    size: 16,
-                    color: Colors.white.withValues(alpha: 0.45),
-                  ),
-                ),
+                  const SizedBox(width: 12),
+                  _circleButton(Icons.settings, _openSettings),
+                ],
               ),
             ),
           ],
@@ -150,12 +178,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (_error != null) {
       return _Message(
         text: '内容源出错：$_error\n请到设置里检查配置。',
+        onImport: _importMedia,
         onSettings: _openSettings,
       );
     }
     if (_items.isEmpty) {
       return _Message(
-        text: '没有找到图片或视频\n${widget.config.mediaPath}\n\n长按屏幕或点右下角进入设置。',
+        text: '还没有素材，点下面按钮导入图片/视频。\n\n素材目录：${widget.config.mediaPath}',
+        onImport: _importMedia,
         onSettings: _openSettings,
       );
     }
@@ -174,9 +204,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
 }
 
 class _Message extends StatelessWidget {
-  const _Message({required this.text, required this.onSettings});
+  const _Message({
+    required this.text,
+    required this.onImport,
+    required this.onSettings,
+  });
 
   final String text;
+  final VoidCallback onImport;
   final VoidCallback onSettings;
 
   @override
@@ -193,6 +228,12 @@ class _Message extends StatelessWidget {
               style: const TextStyle(color: Colors.white70, fontSize: 18),
             ),
             const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onImport,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+              label: const Text('导入图片/视频'),
+            ),
+            const SizedBox(height: 8),
             OutlinedButton(onPressed: onSettings, child: const Text('打开设置')),
           ],
         ),
