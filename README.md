@@ -1,59 +1,55 @@
 # AdScreen 广告屏 · Android 展示端
 
-一台平板 / 电视盒子用的全屏广告屏客户端。当前版本是**前端优先**：循环播放本机上的图片和视频，云端内容源接口已预留，后台上线后无需改播放逻辑。
+一台平板 / 电视盒子用的全屏广告屏客户端。当前版本是**前端优先**：循环播放导入到应用里的图片和视频，云端内容源接口已预留，后台上线后无需改播放逻辑。
 
 ## 当前能力
 
 - 全屏沉浸播放，屏幕常亮
 - 图片按设定秒数轮播，视频播完自动进入下一条，整体循环
-- 自动扫描素材文件夹；每 15 秒刷新一次，往文件夹里丢新文件即可上线
+- 每 15 秒刷新素材文件夹，导入新文件后自动上线
+- **只通过应用内文件选择器导入素材，不申请相册/存储权限，不读取手机上的图片和视频**
 - 设置页可改：素材路径、图片停留时长、设备 ID / 名称 / 播放列表 ID、内容源
-- 可从本机文件选择器批量导入图片/视频到素材目录
 - 多设备结构：每台设备用自己的 `deviceId` 标识，后台上线后按设备下发播放列表
 
 ## 正式信息
 
 - 名称：AdScreen 广告屏
 - 包名：`com.threely.ad_screen`
-- 当前版本：v1.0.0（versionName 1.0.0 / versionCode 1）
+- 版本：1.0.0（versionCode 1）
+- 图标：矢量源文件在 `assets/icon/`，已导出到 Android 各密度 mipmap（含自适应图标）
 
-## 下载安装
+## 拿到安装包
 
-正式版在 [GitHub Releases](https://github.com/aqiyoung/ad-screen/releases) 下载，带正式签名：
+目前**没有发布公开 Release**。推送到 `main` 后，GitHub Actions 会跑格式化检查、分析、测试并构建 APK：
 
-- `app-release.apk` — 直接安装
-- `app-release.aab` — 以后上应用商店用
+1. 打开仓库 **Actions** → 最新一次 `Build & Release Android`
+2. 下载 Artifact `adscreen-release-apk`
+3. 解压得到 `app-release.apk`，安装：
 
 ```bash
 adb install -r app-release.apk
 ```
 
-不用在本机构建。推送到 `main` 会跑格式化检查、分析、测试和构建；推送 `v*` tag 会额外用正式签名构建并发布 Release。
+需要正式发布时，推送 `v*` tag：CI 会用 GitHub Secrets 里的正式签名密钥构建 APK + AAB 并发布 Release。签名密钥不进仓库。
 
-签名密钥以 GitHub Secrets 保存（`ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD`），不进仓库。
+## 导入素材
 
-## 放素材进去
-
-默认素材目录是应用自己的外部存储目录，例如：
+长按播放页任意位置（或点右下角小齿轮）→「从本机导入图片/视频」→ 在系统文件选择器里勾选素材。文件会被复制到应用自己的素材目录：
 
 ```
-/sdcard/Android/data/com.threely.ad_screen/files/media
+/storage/emulated/0/Android/data/com.threely.ad_screen/files/media
 ```
 
-方式一：应用内导入。长按屏幕（或点右下角小齿轮）→「从本机导入图片/视频」。
+也可以 `adb push` 到上述目录批量更新。支持后缀：
 
-方式二：adb 直接推送，适合批量更新：
+- 图片：`.jpg .jpeg .png .gif .webp .bmp`
+- 视频：`.mp4 .mkv .webm .mov .avi .3gp`
 
-```bash
-adb push poster01.jpg /sdcard/Android/data/com.threely.ad_screen/files/media/
-adb push clip01.mp4   /sdcard/Android/data/com.threely.ad_screen/files/media/
-```
+按文件名排序播放。
 
-支持后缀：图片 `.jpg .jpeg .png .gif .webp .bmp`，视频 `.mp4 .mkv .webm .mov .avi .3gp`。按文件名排序播放。
+## 设置
 
-## 进入设置
-
-播放时长按屏幕任意位置，或点右下角半透明齿轮。设置里还能把素材路径改成其它绝对路径（Android 11+ 访问公共目录可能需要存储权限）。
+播放时长按屏幕任意位置，或点右下角半透明齿轮。可设置停留秒数、刷新间隔、设备 ID / 名称 / 播放列表 ID、内容源。
 
 ## 以后接服务端
 

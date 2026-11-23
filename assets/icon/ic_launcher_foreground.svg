@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!-- 自适应图标前景：符号限制在中心 66dp 安全区内 -->
+  <rect x="25" y="29" width="58" height="42" rx="7" fill="#FFFFFF"/>
+  <rect x="29" y="33" width="50" height="34" rx="4" fill="#2F6BFF"/>
+  <path d="M49 39 L49 61 L65 50 Z" fill="#FFFFFF"/>
+  <path d="M50 71 H58 L60 77 H48 Z" fill="#FFFFFF"/>
+  <rect x="44" y="77" width="20" height="3" rx="1.5" fill="#FFFFFF"/>
+</svg>
