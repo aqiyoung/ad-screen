@@ -11,19 +11,26 @@
 - 可从本机文件选择器批量导入图片/视频到素材目录
 - 多设备结构：每台设备用自己的 `deviceId` 标识，后台上线后按设备下发播放列表
 
-## 拿到 APK
+## 正式信息
 
-不用在本机构建。推送到 `main` 后，GitHub Actions 会自动跑格式化检查、分析、测试并构建 Release APK：
+- 名称：AdScreen 广告屏
+- 包名：`com.threely.ad_screen`
+- 当前版本：v1.0.0（versionName 1.0.0 / versionCode 1）
 
-1. 打开仓库的 **Actions** 页，进入最新一次 `Build Android APK`
-2. 在 **Artifacts** 里下载 `ad-screen-release`
-3. 解压得到 `app-release.apk`，adb 安装：
+## 下载安装
+
+正式版在 [GitHub Releases](https://github.com/aqiyoung/ad-screen/releases) 下载，带正式签名：
+
+- `app-release.apk` — 直接安装
+- `app-release.aab` — 以后上应用商店用
 
 ```bash
 adb install -r app-release.apk
 ```
 
-打 tag（如 `v0.1.0`）推送后，APK 也会自动挂到对应的 GitHub Release 上。
+不用在本机构建。推送到 `main` 会跑格式化检查、分析、测试和构建；推送 `v*` tag 会额外用正式签名构建并发布 Release。
+
+签名密钥以 GitHub Secrets 保存（`ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD`），不进仓库。
 
 ## 放素材进去
 
