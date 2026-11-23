@@ -49,7 +49,7 @@ class _AdScreenAppState extends State<AdScreenApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '广告屏',
+      title: 'AdScreen 广告屏',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

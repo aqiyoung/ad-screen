@@ -4,8 +4,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// CI 打 tag 发布时注入正式签名；没有密钥时回退 debug 签名，本地不构建。
+val releaseKeystore = System.getenv("ANDROID_KEYSTORE_FILE")
+
 android {
-    namespace = "com.aqiyoung.ad_screen"
+    namespace = "com.threely.ad_screen"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -14,9 +17,19 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.aqiyoung.ad_screen"
+        applicationId = "com.threely.ad_screen"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -31,9 +44,9 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (releaseKeystore != null) "release" else "debug",
+            )
         }
     }
 }

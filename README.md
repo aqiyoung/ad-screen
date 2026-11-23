@@ -1,4 +1,4 @@
-# 广告屏 · Android 展示端
+# AdScreen 广告屏 · Android 展示端
 
 一台平板 / 电视盒子用的全屏广告屏客户端。当前版本是**前端优先**：循环播放本机上的图片和视频，云端内容源接口已预留，后台上线后无需改播放逻辑。
 
@@ -30,7 +30,7 @@ adb install -r app-release.apk
 默认素材目录是应用自己的外部存储目录，例如：
 
 ```
-/sdcard/Android/data/com.aqiyoung.ad_screen/files/media
+/sdcard/Android/data/com.threely.ad_screen/files/media
 ```
 
 方式一：应用内导入。长按屏幕（或点右下角小齿轮）→「从本机导入图片/视频」。
@@ -38,8 +38,8 @@ adb install -r app-release.apk
 方式二：adb 直接推送，适合批量更新：
 
 ```bash
-adb push poster01.jpg /sdcard/Android/data/com.aqiyoung.ad_screen/files/media/
-adb push clip01.mp4   /sdcard/Android/data/com.aqiyoung.ad_screen/files/media/
+adb push poster01.jpg /sdcard/Android/data/com.threely.ad_screen/files/media/
+adb push clip01.mp4   /sdcard/Android/data/com.threely.ad_screen/files/media/
 ```
 
 支持后缀：图片 `.jpg .jpeg .png .gif .webp .bmp`，视频 `.mp4 .mkv .webm .mov .avi .3gp`。按文件名排序播放。

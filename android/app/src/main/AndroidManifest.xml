@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
 
     <application
-        android:label="广告屏"
+        android:label="AdScreen 广告屏"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

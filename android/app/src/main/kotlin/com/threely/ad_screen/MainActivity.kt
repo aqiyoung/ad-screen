@@ -1,4 +1,4 @@
-package com.aqiyoung.ad_screen
+package com.threely.ad_screen
 
 import io.flutter.embedding.android.FlutterActivity
 
