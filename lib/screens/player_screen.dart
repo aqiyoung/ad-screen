@@ -10,17 +10,18 @@ import '../config/app_config.dart';
 import '../models/media_item.dart';
 import '../services/media_importer.dart';
 import '../sources/content_source.dart';
+import 'settings_screen.dart';
 
 /// 全屏循环播放页面。
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
     super.key,
     required this.config,
-    required this.onOpenSettings,
+    required this.onSettingsSaved,
   });
 
   final AppConfig config;
-  final Future<AppConfig?> Function() onOpenSettings;
+  final void Function(AppConfig) onSettingsSaved;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -140,10 +141,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _openSettings() async {
     _controlsTimer?.cancel();
+    // 必须用本页的 context（在 Navigator 之下）跳转，
+    // 用 AdScreenApp 的 context 会因找不到 Navigator 而毫无反应。
+    final navigator = Navigator.of(context);
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await widget.onOpenSettings();
+    final updated = await navigator.push<AppConfig>(
+      MaterialPageRoute(builder: (_) => SettingsScreen(config: widget.config)),
+    );
     if (!mounted) return;
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // 删除/导入素材后刷新播放列表。
+    await _refresh();
+    if (updated != null) widget.onSettingsSaved(updated);
   }
 
   Future<void> _importMedia() async {

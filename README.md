@@ -17,7 +17,7 @@
 
 - 名称：AdScreen 广告屏
 - 包名：`com.threely.ad_screen`
-- 版本：1.0.2（versionCode 3）
+- 版本：1.0.3（versionCode 4）
 - 图标：矢量源文件在 `assets/icon/`，已导出到 Android 各密度 mipmap（含自适应图标）
 
 ## 拿到安装包
@@ -25,11 +25,11 @@
 目前**没有发布公开 Release**。推送到 `main` 后，GitHub Actions 会跑格式化检查、分析、测试并构建 APK：
 
 1. 打开仓库 **Actions** → 最新一次 `Build & Release Android`
-2. 下载 Artifact `AdScreen-v1.0.2.apk`
-3. 解压得到 `AdScreen-v1.0.2.apk`，安装：
+2. 下载 Artifact `AdScreen-v1.0.3.apk`
+3. 解压得到 `AdScreen-v1.0.3.apk`，安装：
 
 ```bash
-adb install -r AdScreen-v1.0.2.apk
+adb install -r AdScreen-v1.0.3.apk
 ```
 
 需要正式发布时，推送 `v*` tag：CI 会用 GitHub Secrets 里的正式签名密钥构建 APK + AAB 并发布 Release。签名密钥不进仓库。
@@ -48,6 +48,10 @@ adb install -r AdScreen-v1.0.2.apk
 - 视频：`.mp4 .mkv .webm .mov .avi .3gp`
 
 按文件名排序播放。
+
+## 删除素材
+
+长按屏幕（或轻触后点「设置」）进入设置页，「素材文件」区块会列出所有素材，每项右侧有删除按钮；也可以用「清空全部」一次删光。删除后返回播放页会自动刷新。
 
 ## 设置
 

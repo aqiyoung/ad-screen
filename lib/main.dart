@@ -3,7 +3,6 @@ import 'package:path_provider/path_provider.dart';
 
 import 'config/app_config.dart';
 import 'screens/player_screen.dart';
-import 'screens/settings_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,14 +35,9 @@ class _AdScreenAppState extends State<AdScreenApp> {
     _config = widget.config;
   }
 
-  Future<AppConfig?> _openSettings() async {
-    final updated = await Navigator.of(context).push<AppConfig>(
-      MaterialPageRoute(builder: (_) => SettingsScreen(config: _config)),
-    );
-    if (updated != null && mounted) {
-      setState(() => _config = updated);
-    }
-    return updated;
+  void _onSettingsSaved(AppConfig updated) {
+    if (!mounted) return;
+    setState(() => _config = updated);
   }
 
   @override
@@ -59,7 +53,7 @@ class _AdScreenAppState extends State<AdScreenApp> {
       home: PlayerScreen(
         key: ValueKey(_config.toJson().toString()),
         config: _config,
-        onOpenSettings: _openSettings,
+        onSettingsSaved: _onSettingsSaved,
       ),
     );
   }

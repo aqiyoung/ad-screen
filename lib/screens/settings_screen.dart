@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../config/app_config.dart';
 import '../models/device_config.dart';
+import '../models/media_item.dart';
 import '../services/media_importer.dart';
+import '../services/media_scanner.dart';
 
 /// 设置页。保存后把新的 AppConfig 返回给播放器。
 class SettingsScreen extends StatefulWidget {
@@ -22,6 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _deviceName;
   late final TextEditingController _playlistId;
 
+  List<MediaItem> _files = const <MediaItem>[];
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _deviceId = TextEditingController(text: widget.config.device.deviceId);
     _deviceName = TextEditingController(text: widget.config.device.name);
     _playlistId = TextEditingController(text: widget.config.device.playlistId);
+    _loadFiles();
   }
 
   @override
@@ -53,12 +60,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return value.clamp(min, max);
   }
 
+  void _loadFiles() {
+    final items = const MediaScanner().scan(Directory(_mediaPath.text.trim()));
+    if (!mounted) return;
+    setState(() => _files = items);
+  }
+
   Future<void> _importFiles() async {
     final path = _mediaPath.text.trim();
     final count = await const MediaImporter().importInto(path);
-    if (!mounted || count == 0) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('已导入 $count 个文件到 $path')));
+    if (!mounted) return;
+    _loadFiles();
+    if (count > 0) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('已导入 $count 个文件')));
+    }
+  }
+
+  Future<void> _deleteFile(MediaItem item) async {
+    await File(item.path).delete();
+    _loadFiles();
+  }
+
+  Future<void> _clearAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('清空全部素材'),
+        content: const Text('这会删除素材文件夹里的所有文件，确定吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final directory = Directory(_mediaPath.text.trim());
+    if (!directory.existsSync()) return;
+    for (final file in directory.listSync().whereType<File>()) {
+      await file.delete();
+    }
+    _loadFiles();
   }
 
   Future<void> _save() async {
@@ -152,6 +201,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _card(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionTitle('素材文件（${_files.length}）'),
+                    TextButton.icon(
+                      onPressed: _files.isEmpty ? null : _clearAll,
+                      icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                      label: const Text('清空全部'),
+                    ),
+                  ],
+                ),
+                if (_files.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      '暂无素材，点上面的按钮导入。',
+                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                    ),
+                  )
+                else
+                  ..._files.map(
+                    (item) => ListTile(
+                      dense: true,
+                      leading: Icon(
+                        item.type == MediaType.image
+                            ? Icons.image_outlined
+                            : Icons.movie_outlined,
+                        size: 20,
+                        color: Colors.white70,
+                      ),
+                      title: Text(
+                        item.fileName,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        color: Colors.redAccent,
+                        tooltip: '删除',
+                        onPressed: () => _deleteFile(item),
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
