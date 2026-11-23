@@ -62,19 +62,32 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: flutter build appbundle --release
 
+      # 安装包用正式名称，不叫 app-release
+      - name: Rename build outputs
+        run: |
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          APK_NAME="AdScreen-v${VERSION}.apk"
+          AAB_NAME="AdScreen-v${VERSION}.aab"
+          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/${APK_NAME}"
+          if [ -f build/app/outputs/bundle/release/app-release.aab ]; then
+            mv build/app/outputs/bundle/release/app-release.aab "build/app/outputs/bundle/release/${AAB_NAME}"
+          fi
+          echo "APK_NAME=${APK_NAME}" >> "$GITHUB_ENV"
+          echo "AAB_NAME=${AAB_NAME}" >> "$GITHUB_ENV"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: adscreen-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: ${{ env.APK_NAME }}
+          path: build/app/outputs/flutter-apk/${{ env.APK_NAME }}
           if-no-files-found: error
 
       - name: Upload AAB artifact
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: adscreen-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          name: ${{ env.AAB_NAME }}
+          path: build/app/outputs/bundle/release/${{ env.AAB_NAME }}
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -83,5 +96,5 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/${{ env.APK_NAME }}
+            build/app/outputs/bundle/release/${{ env.AAB_NAME }}
