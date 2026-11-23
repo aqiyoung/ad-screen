@@ -21,8 +21,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _deviceId;
   late final TextEditingController _deviceName;
   late final TextEditingController _playlistId;
-  late final TextEditingController _remoteBaseUrl;
-  late ContentSourceType _sourceType;
 
   @override
   void initState() {
@@ -37,8 +35,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _deviceId = TextEditingController(text: widget.config.device.deviceId);
     _deviceName = TextEditingController(text: widget.config.device.name);
     _playlistId = TextEditingController(text: widget.config.device.playlistId);
-    _remoteBaseUrl = TextEditingController(text: widget.config.remoteBaseUrl);
-    _sourceType = widget.config.sourceType;
   }
 
   @override
@@ -49,8 +45,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _deviceId.dispose();
     _deviceName.dispose();
     _playlistId.dispose();
-    _remoteBaseUrl.dispose();
     super.dispose();
+  }
+
+  int _clampInt(String text, int fallback, int min, int max) {
+    final value = int.tryParse(text.trim()) ?? fallback;
+    return value.clamp(min, max);
   }
 
   Future<void> _importFiles() async {
@@ -64,12 +64,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _save() async {
     final config = AppConfig(
       mediaPath: _mediaPath.text.trim(),
-      imageDurationSeconds:
-          int.tryParse(_imageDuration.text.trim()) ??
-          widget.config.imageDurationSeconds,
-      refreshIntervalSeconds:
-          int.tryParse(_refreshInterval.text.trim()) ??
-          widget.config.refreshIntervalSeconds,
+      imageDurationSeconds: _clampInt(_imageDuration.text, 8, 1, 3600),
+      refreshIntervalSeconds: _clampInt(_refreshInterval.text, 15, 3, 3600),
       device: DeviceConfig(
         deviceId: _deviceId.text.trim().isEmpty
             ? 'screen-01'
@@ -77,8 +73,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         name: _deviceName.text.trim(),
         playlistId: _playlistId.text.trim(),
       ),
-      sourceType: _sourceType,
-      remoteBaseUrl: _remoteBaseUrl.text.trim(),
+      // 云端内容源尚未开放，始终使用本地文件夹，避免保存后无法播放。
+      sourceType: ContentSourceType.local,
+      remoteBaseUrl: widget.config.remoteBaseUrl,
     );
     await config.save();
     if (!mounted) return;
@@ -90,6 +87,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('广告屏设置'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '返回',
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
             onPressed: _save,
@@ -103,105 +105,135 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _sectionTitle('素材'),
-            TextField(
-              controller: _mediaPath,
-              decoration: const InputDecoration(
-                labelText: '素材文件夹路径',
-                border: OutlineInputBorder(),
-              ),
+            const Text(
+              '修改后点右上角 ✓ 保存',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _importFiles,
-              icon: const Icon(Icons.file_upload_outlined),
-              label: const Text('从本机导入图片/视频'),
-            ),
-            const SizedBox(height: 12),
-            Row(
+            const SizedBox(height: 16),
+            _card(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _imageDuration,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: '图片停留（秒）',
-                      border: OutlineInputBorder(),
-                    ),
+                _sectionTitle('素材'),
+                TextField(
+                  controller: _mediaPath,
+                  decoration: const InputDecoration(
+                    labelText: '素材文件夹路径',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _refreshInterval,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: '刷新间隔（秒）',
-                      border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _importFiles,
+                  icon: const Icon(Icons.file_upload_outlined),
+                  label: const Text('从本机导入图片/视频'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _imageDuration,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: '图片停留（秒）',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _refreshInterval,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: '刷新间隔（秒）',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _card(
+              children: [
+                _sectionTitle('这台设备'),
+                TextField(
+                  controller: _deviceId,
+                  decoration: const InputDecoration(
+                    labelText: '设备 ID',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _deviceName,
+                  decoration: const InputDecoration(
+                    labelText: '设备名称',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _playlistId,
+                  decoration: const InputDecoration(
+                    labelText: '播放列表 ID（后台用）',
+                    border: OutlineInputBorder(),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            _sectionTitle('这台设备'),
-            TextField(
-              controller: _deviceId,
-              decoration: const InputDecoration(
-                labelText: '设备 ID',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _deviceName,
-              decoration: const InputDecoration(
-                labelText: '设备名称',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _playlistId,
-              decoration: const InputDecoration(
-                labelText: '播放列表 ID（后台用）',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _sectionTitle('内容源'),
-            DropdownButtonFormField<ContentSourceType>(
-              initialValue: _sourceType,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(
-                  value: ContentSourceType.local,
-                  child: Text('本地文件夹（当前可用）'),
-                ),
-                DropdownMenuItem(
-                  value: ContentSourceType.remote,
-                  child: Text('云端接口（尚未实现）'),
+            const SizedBox(height: 16),
+            _card(
+              children: [
+                _sectionTitle('内容源'),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.folder_open, size: 18, color: Colors.white70),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '本地文件夹（当前可用）\n云端接口尚未开放',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => _sourceType = value);
-              },
             ),
-            if (_sourceType == ContentSourceType.remote) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _remoteBaseUrl,
-                decoration: const InputDecoration(
-                  labelText: '接口根地址 https://...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             FilledButton(onPressed: _save, child: const Text('保存并返回播放')),
             const SizedBox(height: 24),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _card({required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }

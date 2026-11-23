@@ -5,6 +5,8 @@
 ## 当前能力
 
 - 全屏沉浸播放，屏幕常亮
+- 横屏、竖屏素材都完整显示（contain，不裁切，留黑边）
+- 播放时自动隐藏操作控件；轻触屏幕显示控件，5 秒后自动隐藏；长按屏幕直接进入设置
 - 图片按设定秒数轮播，视频播完自动进入下一条，整体循环
 - 每 15 秒刷新素材文件夹，导入新文件后自动上线
 - **只通过应用内文件选择器导入素材，不申请相册/存储权限，不读取手机上的图片和视频**
@@ -15,7 +17,7 @@
 
 - 名称：AdScreen 广告屏
 - 包名：`com.threely.ad_screen`
-- 版本：1.0.1（versionCode 2）
+- 版本：1.0.2（versionCode 3）
 - 图标：矢量源文件在 `assets/icon/`，已导出到 Android 各密度 mipmap（含自适应图标）
 
 ## 拿到安装包
@@ -23,11 +25,11 @@
 目前**没有发布公开 Release**。推送到 `main` 后，GitHub Actions 会跑格式化检查、分析、测试并构建 APK：
 
 1. 打开仓库 **Actions** → 最新一次 `Build & Release Android`
-2. 下载 Artifact `AdScreen-v1.0.1.apk`
-3. 解压得到 `AdScreen-v1.0.1.apk`，安装：
+2. 下载 Artifact `AdScreen-v1.0.2.apk`
+3. 解压得到 `AdScreen-v1.0.2.apk`，安装：
 
 ```bash
-adb install -r AdScreen-v1.0.1.apk
+adb install -r AdScreen-v1.0.2.apk
 ```
 
 需要正式发布时，推送 `v*` tag：CI 会用 GitHub Secrets 里的正式签名密钥构建 APK + AAB 并发布 Release。签名密钥不进仓库。

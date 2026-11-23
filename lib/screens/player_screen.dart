@@ -38,6 +38,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Object? _error;
   Timer? _refreshTimer;
 
+  bool _controlsVisible = false;
+  Timer? _controlsTimer;
+  bool _hintVisible = true;
+  Timer? _hintTimer;
+
+  bool get _hasMedia => !_loading && _error == null && _items.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -52,11 +59,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
       Duration(seconds: seconds),
       (_) => _refresh(),
     );
+    _hintTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _hintVisible = false);
+    });
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _controlsTimer?.cancel();
+    _hintTimer?.cancel();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WakelockPlus.disable();
     super.dispose();
@@ -96,10 +108,38 @@ class _PlayerScreenState extends State<PlayerScreen> {
     setState(() {
       _index = (_index + 1) % _items.length;
       _cycle++;
+      _controlsVisible = false;
+      _hintVisible = false;
     });
+    _controlsTimer?.cancel();
+  }
+
+  void _showControls() {
+    if (!mounted || !_hasMedia) return;
+    setState(() {
+      _controlsVisible = true;
+      _hintVisible = false;
+    });
+    _controlsTimer?.cancel();
+    _controlsTimer = Timer(const Duration(seconds: 5), _hideControls);
+  }
+
+  void _hideControls() {
+    if (!mounted) return;
+    setState(() => _controlsVisible = false);
+  }
+
+  void _onScreenTap() {
+    if (!_hasMedia) return;
+    if (_controlsVisible) {
+      _hideControls();
+    } else {
+      _showControls();
+    }
   }
 
   Future<void> _openSettings() async {
+    _controlsTimer?.cancel();
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await widget.onOpenSettings();
     if (!mounted) return;
@@ -107,6 +147,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _importMedia() async {
+    _controlsTimer?.cancel();
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     final count = await const MediaImporter().importInto(
       widget.config.mediaPath,
@@ -119,52 +160,131 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (count > 0) await _refresh();
   }
 
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: Colors.white.withValues(alpha: 0.45),
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final playing = _hasMedia;
+    final showOverlay = playing && _controlsVisible;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // 轻触显示/隐藏控件，长按直接进入设置。translucent 让黑边区域也能响应。
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _onScreenTap,
+              onLongPress: _openSettings,
+              child: _buildContent(),
+            ),
+          ),
+          if (showOverlay)
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x66000000),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Color(0xB3000000),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (showOverlay)
+            Positioned(
+              top: 24,
+              right: 24,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_index + 1} / ${_items.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+          if (playing && _hintVisible && !_controlsVisible)
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 28,
+              child: IgnorePointer(
+                child: Center(
+                  child: Text(
+                    '轻触屏幕显示操作',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+          if (showOverlay)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _controlButton(
+                        Icons.add_photo_alternate_outlined,
+                        '导入素材',
+                        _importMedia,
+                      ),
+                      const SizedBox(width: 40),
+                      _controlButton(
+                        Icons.settings_outlined,
+                        '设置',
+                        _openSettings,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onLongPress: _openSettings,
-        child: Stack(
-          children: [
-            Positioned.fill(child: _buildContent()),
-            Positioned(
-              right: 14,
-              bottom: 14,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _circleButton(
-                    Icons.add_photo_alternate_outlined,
-                    _importMedia,
-                  ),
-                  const SizedBox(width: 12),
-                  _circleButton(Icons.settings, _openSettings),
-                ],
-              ),
+  Widget _controlButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(18),
             ),
-          ],
-        ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
       ),
     );
   }
@@ -177,14 +297,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
     if (_error != null) {
       return _Message(
-        text: '内容源出错：$_error\n请到设置里检查配置。',
+        title: '内容源出错',
+        subtitle: '$_error\n请到设置里检查配置。',
         onImport: _importMedia,
         onSettings: _openSettings,
       );
     }
     if (_items.isEmpty) {
       return _Message(
-        text: '还没有素材，点下面按钮导入图片/视频。\n\n素材目录：${widget.config.mediaPath}',
+        title: '还没有素材',
+        subtitle: '导入图片或视频后自动开始轮播\n\n素材目录：${widget.config.mediaPath}',
         onImport: _importMedia,
         onSettings: _openSettings,
       );
@@ -205,37 +327,84 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
 class _Message extends StatelessWidget {
   const _Message({
-    required this.text,
+    required this.title,
+    required this.subtitle,
     required this.onImport,
     required this.onSettings,
   });
 
-  final String text;
+  final String title;
+  final String subtitle;
   final VoidCallback onImport;
   final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 18),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onImport,
-              icon: const Icon(Icons.add_photo_alternate_outlined),
-              label: const Text('导入图片/视频'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0x333A78FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 34,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 14,
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                FilledButton.icon(
+                  onPressed: onImport,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: const Text('导入图片/视频'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(220, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                TextButton(onPressed: onSettings, child: const Text('打开设置')),
+              ],
             ),
-            const SizedBox(height: 8),
-            OutlinedButton(onPressed: onSettings, child: const Text('打开设置')),
-          ],
+          ),
         ),
       ),
     );
@@ -295,10 +464,11 @@ class _ImageSlideState extends State<_ImageSlide> {
 
   @override
   Widget build(BuildContext context) {
+    // contain 保证横屏/竖屏图片都完整显示，不裁切，黑边留给屏幕背景。
     return SizedBox.expand(
       child: Image.file(
         File(widget.item.path),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
@@ -389,9 +559,10 @@ class _VideoSlideState extends State<_VideoSlide> {
     if (size.width <= 0 || size.height <= 0) {
       return const ColoredBox(color: Colors.black);
     }
+    // contain 保证横屏/竖屏视频完整显示。
     return SizedBox.expand(
       child: FittedBox(
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         child: SizedBox(
           width: size.width,
           height: size.height,
