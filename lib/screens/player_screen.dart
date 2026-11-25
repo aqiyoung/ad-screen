@@ -241,6 +241,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ),
               ),
             ),
+          // 播放时所有控件隐藏；轻触屏幕才显示，几秒后自动收起。
           if (showOverlay)
             Positioned(
               left: 0,
@@ -249,37 +250,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
               child: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: _controlButton(
-                      Icons.add_photo_alternate_outlined,
-                      '导入素材',
-                      _importMedia,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // 设置入口常驻，不用先轻触，避免用户找不到或点不到。
-          if (playing)
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: SafeArea(
-                child: Opacity(
-                  opacity: _controlsVisible ? 1.0 : 0.45,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.settings_outlined, size: 24),
-                      color: Colors.white,
-                      tooltip: '设置',
-                      onPressed: _openSettings,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _controlButton(
+                        Icons.add_photo_alternate_outlined,
+                        '导入素材',
+                        _importMedia,
+                      ),
+                      const SizedBox(width: 40),
+                      _controlButton(
+                        Icons.settings_outlined,
+                        '设置',
+                        _openSettings,
+                      ),
+                    ],
                   ),
                 ),
               ),
