@@ -249,21 +249,37 @@ class _PlayerScreenState extends State<PlayerScreen> {
               child: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _controlButton(
-                        Icons.add_photo_alternate_outlined,
-                        '导入素材',
-                        _importMedia,
-                      ),
-                      const SizedBox(width: 40),
-                      _controlButton(
-                        Icons.settings_outlined,
-                        '设置',
-                        _openSettings,
-                      ),
-                    ],
+                  child: Center(
+                    child: _controlButton(
+                      Icons.add_photo_alternate_outlined,
+                      '导入素材',
+                      _importMedia,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // 设置入口常驻，不用先轻触，避免用户找不到或点不到。
+          if (playing)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: SafeArea(
+                child: Opacity(
+                  opacity: _controlsVisible ? 1.0 : 0.45,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.settings_outlined, size: 24),
+                      color: Colors.white,
+                      tooltip: '设置',
+                      onPressed: _openSettings,
+                    ),
                   ),
                 ),
               ),
@@ -409,8 +425,18 @@ class _Message extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                TextButton(onPressed: onSettings, child: const Text('打开设置')),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: onSettings,
+                  icon: const Icon(Icons.settings_outlined, size: 18),
+                  label: const Text('打开设置'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(220, 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
